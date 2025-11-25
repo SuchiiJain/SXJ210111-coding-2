@@ -2,6 +2,10 @@
 CS 6375 Homework 2 Programming
 Implement the __getitem__() function in this python script
 """
+
+print("RUNNING:", __file__)
+
+
 import torch
 import torch.utils.data as data
 import csv
@@ -61,14 +65,55 @@ class CrackerBox(data.Dataset):
         
         return gt_files_train, gt_files_val
 
-
-    # TODO: implement this function
     def __getitem__(self, idx):
     
         # gt file
         filename_gt = self.gt_paths[idx]
-        
-        ### ADD YOUR CODE HERE ###
+
+
+#MY CODE
+        with open(filename_gt, 'r') as f:
+            line = f.readline().strip().split()
+            x1, y1, x2, y2 = map(float, line)
+
+        image_name = filename_gt.replace(".txt", ".jpg")
+        image = cv2.imread(image_name)
+
+        image_resized = cv2.resize(image, (self.yolo_image_size, self.yolo_image_size))
+
+        image_rgb = image_resized[:, :, (2, 1, 0)].astype(np.float32)
+
+        image_normalized = image_rgb - self.pixel_mean
+
+        image_blob = image_normalized.transpose((2, 0, 1))
+
+        x1_s = x1 * self.scale_width
+        x2_s = x2 * self.scale_width
+        y1_s = y1 * self.scale_height
+        y2_s = y2 * self.scale_height
+
+        w = x2_s - x1_s
+        h = y2_s - y1_s
+        cx = x1_s + w * 0.5
+        cy = y1_s + h * 0.5
+
+        gx = int(cx / self.yolo_grid_size)
+        gy = int(cy / self.yolo_grid_size)
+
+        px = (cx - gx * self.yolo_grid_size) / self.yolo_grid_size
+        py = (cy - gy * self.yolo_grid_size) / self.yolo_grid_size
+
+        nw = w / self.yolo_image_size
+        nh = h / self.yolo_image_size
+
+        gt_box_blob = np.zeros((4, 7, 7), dtype=np.float32)
+        gt_mask_blob = np.zeros((7, 7), dtype=np.float32)
+
+        gt_box_blob[0, gy, gx] = px
+        gt_box_blob[1, gy, gx] = py
+        gt_box_blob[2, gy, gx] = nw
+        gt_box_blob[3, gy, gx] = nh
+        gt_mask_blob[gy, gx] = 1.0
 
         # this is the sample dictionary to be returned from this function
         sample = {'image': image_blob,
