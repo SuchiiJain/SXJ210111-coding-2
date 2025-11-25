@@ -3,9 +3,6 @@ CS 6375 Homework 2 Programming
 Implement the __getitem__() function in this python script
 """
 
-print("RUNNING:", __file__)
-
-
 import torch
 import torch.utils.data as data
 import csv
@@ -76,7 +73,7 @@ class CrackerBox(data.Dataset):
             line = f.readline().strip().split()
             x1, y1, x2, y2 = map(float, line)
 
-        image_name = filename_gt.replace(".txt", ".jpg")
+        image_name = filename_gt.replace("-.txt", "-.jpg", "-box.txt", "-gt.jpg")
         image = cv2.imread(image_name)
 
         image_resized = cv2.resize(image, (self.yolo_image_size, self.yolo_image_size))
