@@ -70,6 +70,69 @@ class CrackerBox(data.Dataset):
         
         ### ADD YOUR CODE HERE ###
 
+        base_name = os.path.basename(filename_gt)
+        base_name = base_name.replace('-box.txt', '')
+        image_name = base_name + '-color.jpg'
+        image_path = os.path.join(self.data_path, image_name)
+
+    # read image
+        image = cv2.imread(image_path)
+        if image is None:
+            print('Error: cannot load image %s' % image_path)
+            sys.exit(1)
+
+    # convert to RGB/ float32
+        image = image[:, :, (2, 1, 0)].astype(np.float32)
+
+    # read (cx, cy, w, h) in the original resolution
+        with open(filename_gt, 'r') as f:
+            line = f.readline().strip().split()
+            cx = float(line[0])
+            cy = float(line[1])
+            w  = float(line[2])
+            h  = float(line[3])
+
+        image_resized = cv2.resize(image, (self.yolo_image_size, self.yolo_image_size))
+
+    #subtract pixel mean, then divide by 255
+        image_normalized = (image_resized - self.pixel_mean) / 255.0
+
+    # convert HWC to CHW 
+        image_blob = image_normalized.transpose((2, 0, 1))
+        image_blob = torch.from_numpy(image_blob).float()
+
+        cx_scaled = cx * self.scale_width
+        cy_scaled = cy * self.scale_height
+        w_scaled  = w  * self.scale_width
+        h_scaled  = h  * self.scale_height
+
+    # find which grid cell (7x7) contains the center point
+        grid_x = int(cx_scaled / self.yolo_grid_size)
+        grid_y = int(cy_scaled / self.yolo_grid_size)
+
+    # normalized coordinates inside the selected grid cell
+        cx_cell = (cx_scaled - grid_x * self.yolo_grid_size) / self.yolo_grid_size
+        cy_cell = (cy_scaled - grid_y * self.yolo_grid_size) / self.yolo_grid_size
+        w_cell  = w_scaled / self.yolo_image_size
+        h_cell  = h_scaled / self.yolo_image_size
+
+        gt_box = np.zeros((4, self.yolo_grid_num, self.yolo_grid_num), dtype=np.float32)
+
+        gt_mask = np.zeros((self.yolo_grid_num, self.yolo_grid_num), dtype=np.float32)
+
+        gt_box[0, grid_y, grid_x] = cx_cell
+        gt_box[1, grid_y, grid_x] = cy_cell
+        gt_box[2, grid_y, grid_x] = w_cell
+        gt_box[3, grid_y, grid_x] = h_cell
+
+        gt_mask[grid_y, grid_x] = 1.0
+
+    # convert numpy arrays to torch tensors
+        gt_box_blob = torch.from_numpy(gt_box).float()
+        gt_mask_blob = torch.from_numpy(gt_mask).float()
+        
+        
+
         # this is the sample dictionary to be returned from this function
         sample = {'image': image_blob,
                   'gt_box': gt_box_blob,
