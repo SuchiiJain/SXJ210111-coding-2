@@ -72,8 +72,25 @@ class CrackerBox(data.Dataset):
 
         base_name = os.path.basename(filename_gt)
         base_name = base_name.replace('-box.txt', '')
-        image_name = base_name + '-color.jpg'
-        image_path = os.path.join(self.data_path, image_name)
+        # try multiple possible filenames
+        possible_images = [
+            base_name + '-color.jpg',
+            base_name + '-gt.jpg',
+            base_name + '.jpg'
+        ]   
+
+        image = None
+        for name in possible_images:
+            path = os.path.join(self.data_path, name)
+            if os.path.exists(path):
+                image_path = path
+                image = cv2.imread(path)
+            break
+
+        if image is None:
+            raise FileNotFoundError("No matching image for: " + filename_gt)
+
+        image_path = os.path.join(self.data_path, possible_images)
 
     # read image
         image = cv2.imread(image_path)
@@ -155,8 +172,8 @@ def draw_grid(image, line_space=64):
 
 # the main function for testing
 if __name__ == '__main__':
-    dataset_train = CrackerBox('train')
-    dataset_val = CrackerBox('val')
+    dataset_train = CrackerBox('train', data_path='yolo/data')
+    dataset_val   = CrackerBox('val', data_path='yolo/data')
     
     # dataloader
     train_loader = torch.utils.data.DataLoader(dataset_train, batch_size=1, shuffle=False, num_workers=0)
