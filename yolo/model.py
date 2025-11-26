@@ -36,8 +36,69 @@ class YOLO(nn.Module):
     def create_modules(self):
         modules = nn.Sequential()
 
-        ### ADD YOUR CODE HERE ###
-        # hint: use the modules.add_module()
+        # Feature extraction layers
+        modules.add_module("conv1",
+            nn.Sequential(
+                nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(32),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv2",
+            nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),  # 448 → 224
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv3",
+            nn.Sequential(
+                nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), # 224 → 112
+                nn.BatchNorm2d(128),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv4",
+            nn.Sequential(
+                nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), # 112 → 56
+                nn.BatchNorm2d(256),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv5",
+            nn.Sequential(
+                nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1), # 56 → 28
+                nn.BatchNorm2d(256),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv6",
+            nn.Sequential(
+                nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1), # 28 → 14
+                nn.BatchNorm2d(512),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        modules.add_module("conv7",
+            nn.Sequential(
+                nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1), # 14 → 7
+                nn.BatchNorm2d(512),
+                nn.ReLU(inplace=True)
+            )
+        )
+
+        # Prediction layer
+        out_channels = self.num_boxes * 5 + self.num_classes   # (5*2 + 1) = 11
+
+        modules.add_module("output_conv",
+            nn.Conv2d(512, out_channels, kernel_size=1)
+        )
 
         return modules
 
