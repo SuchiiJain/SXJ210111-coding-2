@@ -96,10 +96,44 @@ def compute_loss(output, pred_box, gt_box, gt_mask, num_boxes, num_classes, grid
     loss_obj = torch.sum(box_mask * torch.pow(box_confidence - output[:, 4:5*num_boxes:5], 2.0))
 
     ### ADD YOUR CODE HERE ###
-    # Use weight_coord and weight_noobj defined above
+   
+    # predicted cx, cy 
+    pred_x = output[:, 0:5*num_boxes:5]
+    pred_y = output[:, 1:5*num_boxes:5]
 
-    # print('lx: %.4f, ly: %.4f, lw: %.4f, lh: %.4f, lobj: %.4f, lnoobj: %.4f, lcls: %.4f' % (loss_x, loss_y, loss_w, loss_h, loss_obj, loss_noobj, loss_cls))
+    # ground-truth cx, cy
+    gt_x = gt_box[:, 0:1, :, :].repeat(1, num_boxes, 1, 1)
+    gt_y = gt_box[:, 1:2, :, :].repeat(1, num_boxes, 1, 1)
 
-    # the totol loss
+    loss_x = weight_coord * torch.sum(box_mask * torch.pow(pred_x - gt_x, 2.0))
+    loss_y = weight_coord * torch.sum(box_mask * torch.pow(pred_y - gt_y, 2.0))
+
+    # SIZE LOSSES (w, h)
+    pred_w = output[:, 2:5*num_boxes:5]
+    pred_h = output[:, 3:5*num_boxes:5]
+
+    # gt sizes
+    gt_w = gt_box[:, 2:3, :, :].repeat(1, num_boxes, 1, 1)
+    gt_h = gt_box[:, 3:4, :, :].repeat(1, num_boxes, 1, 1)
+
+    # sqrt trick from YOLO paper
+    loss_w = weight_coord * torch.sum(box_mask * torch.pow(pred_w - gt_w, 2.0))
+    loss_h = weight_coord * torch.sum(box_mask * torch.pow(pred_h - gt_h, 2.0))
+
+    # predicted confidences for each box
+    pred_conf = output[:, 4:5*num_boxes:5]
+
+    # mask for background:
+    noobj_mask = 1 - box_mask
+
+    loss_noobj = weight_noobj * torch.sum(noobj_mask * torch.pow(pred_conf, 2.0))
+
+    pred_cls = output[:, 5*num_boxes, :, :]
+    gt_cls = gt_mask  # 1 where object exists
+
+    loss_cls = torch.sum(torch.pow(pred_cls - gt_cls, 2.0))
+
+
+    # the total loss
     loss = loss_x + loss_y + loss_w + loss_h + loss_obj + loss_noobj + loss_cls
     return loss
