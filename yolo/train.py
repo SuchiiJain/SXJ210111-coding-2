@@ -42,7 +42,7 @@ if __name__ == '__main__':
     num_epochs = 100
     batch_size = 2
     learning_rate = 1e-4
-    num_workers = 2
+    num_workers = 0
 
     # dataset
     dataset_train = CrackerBox('train')  
