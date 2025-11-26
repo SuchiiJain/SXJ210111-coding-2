@@ -24,7 +24,8 @@ class CrackerBox(data.Dataset):
 
         self.name = 'cracker_box_' + image_set
         self.image_set = image_set
-        self.data_path = data_path
+        self.data_path = r"C:\Users\Suchi\OneDrive\Desktop\SXJ210111-coding-2\yolo\data"
+        print("DEBUG: Looking for TXT in:", os.path.abspath(self.data_path))
         self.classes = ('__background__', 'cracker_box')
         self.width = 640
         self.height = 480
@@ -73,7 +74,7 @@ class CrackerBox(data.Dataset):
             line = f.readline().strip().split()
             x1, y1, x2, y2 = map(float, line)
 
-        image_name = filename_gt.replace("-.txt", "-.jpg", "-box.txt", "-gt.jpg")
+        image_name = filename_gt.replace("-box.txt", "-gt.jpg")
         image = cv2.imread(image_name)
 
         image_resized = cv2.resize(image, (self.yolo_image_size, self.yolo_image_size))
